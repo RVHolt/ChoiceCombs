@@ -1,0 +1,621 @@
+---
+title: "Statistical Analysis"
+author: "Regine Victoria Holt"
+date: "2023-09-30"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Interobserver concordance & Program validity
+
+### Background
+
+Picture of inside of comb of ONE hen randomly selected from each pen (n = 16) rated by two observers (PL and RVH) for Inter-observer concordance and by same observer using two programs (RVH) ImageJ (version: Fiji) vs. Original program to check program validity..
+
+We use the psych package for these calculations. As we only have a fixed set of observers, ICC3 would be relevant for Interobserver concordance. However, as we wished to generalise our ratings and ICC2 is more common for this purpose, we report ICC2 for Inter-observer concordance. For program validation, we did not intend to generalise and therefore report ICC3.
+
+### Interobserver concordance
+
+```{r, warning=FALSE, message=FALSE}
+library(psych)      #Alternative package for ICC
+library(readxl)     #Read excel-files
+```
+
+```{r}
+#Importing Interobserver concordance data
+IO_Area <- read_excel("InterObserverConcordance.xlsx", 
+    sheet = "Area", na = ".")
+
+IO_Perimeter <- read_excel("InterObserverConcordance.xlsx", 
+    sheet = "Perimeter", na = ".")
+```
+
+```{r}
+#Inter-observer concordance for comb area = 0.94 = Good
+icc(IO_Area, model = "twoway", type = "agreement", unit = "single")
+ICC(IO_Area)
+```
+
+```{r}
+#Inter-observer concordance for comb perimeter = 0.81 = Good
+icc(IO_Perimeter, model = "twoway", type = "agreement", unit = "single")
+ICC(IO_Perimeter)
+```
+
+```{r}
+#Mean agreement over comb measures= 0.88 = good
+(0.94 + 0.81)/2
+```
+
+### Program validity
+
+```{r, warning=FALSE, message=FALSE}
+library(psych)      #Alternative package for ICC
+library(readxl)     #Read excel-files
+```
+
+```{r}
+#Importing Program validation data
+PV_Area <- read_excel("ProgramValidity.xlsx", 
+    sheet = "Area", na = ".")
+
+PV_Perimeter <- read_excel("ProgramValidity.xlsx", 
+    sheet = "Perimeter", na = ".")
+```
+
+```{r}
+#Program validation for comb area = 0.91 = Good
+icc(PV_Area, model = "twoway", type = "agreement", unit = "single")
+ICC(PV_Area)
+```
+
+```{r}
+#Program validation for comb perimeter = 0.95 = Good
+icc(PV_Perimeter, model = "twoway", type = "agreement", unit = "single")
+ICC(PV_Perimeter)
+```
+
+```{r}
+#Mean agreement over comb measures= 0.93 = good
+(0.91 + 0.95)/2
+```
+
+## Power analysis
+
+Following the guidelines from:
+
+-   <https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12504>
+
+-   <https://ladal.edu.au/pwr.html#Introduction>
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(readxl)     #Read excel-files
+library(openxlsx)   #Create excel files
+library(tidyverse)  #Time without date, ggplot2, dplyr
+```
+
+```{r}
+#Importing Comb data
+Ind <- read_excel("Data.xlsx", sheet = "Data", na = ".")
+```
+
+```{r, warning=FALSE, message=FALSE}
+library(simr) #power analyses for mixed-effect models
+library(effectsize) #extracting and estimating effect sizes
+```
+
+```{r}
+#Original Model --> Observed effect sizes
+pa1 <- lmer(Weight ~ Period2 + (1|Pen), data = Ind)
+summary(pa1)
+fixef(pa1)
+
+#Adjusted Model --> "Wanted" effect sizes (for significant results)
+pa1a <- lmer(Weight ~ Period2 + (1|Pen), data = Ind)
+fixef(pa1a) ["(Intercept)"] = 1557.016
+fixef(pa1a) ["Period2S"] = 95.827
+summary(pa1a)
+```
+
+```{r}
+#Running Power analysis (50 simulations), no change in number of observations
+powerSim(pa1a, nsim=50)
+```
+
+```{r}
+#Modified model with "wanted" effect sizes and Increasing number of observations inside each Pen up to 23 
+pa1b <-  extend(pa1a, within = "Pen", n=23)
+powerSim(pa1b, nsim=50)
+
+#Original model with observed effect sizes and Increasing number of observations inside each pen up to 20 
+pa1c <-  extend(pa1, within = "Pen", n=20)
+powerSim(pa1, nsim=50)
+```
+
+```{r}
+#Calculating power curve for Original model with observed effect sizes and increased number of observations inside each pen up to 20
+pc3 <- powerCurve(pa1c, within="Pen", breaks=1:23)
+print(pc3)
+
+#Calculating power curve for Modified model with "wanted" effect sizes and increased number of observations inside each pen up to 20
+pc4 <- powerCurve(pa1b, within="Pen", breaks=1:20)
+print(pc4)
+```
+
+### Get effect size from original model (different package: Effect size)
+
+```{r}
+effectsize(pa1a)
+```
+
+### Power analysis results
+
+Six birds per pen should be sufficient to reach power > 0.80.These were randomly selected.
+
+To reach n= 100 hens, we selected one additional bird randomly selected from one pen per treatment (SS, SM, MS, MM).
+
+## Statistical analysis
+
+### Importing data
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(readxl)     #Read excel-files
+library(openxlsx)   #Create excel files
+library(tidyverse)  #Time without date, ggplot2, dplyr
+```
+
+```{r}
+#Importing Comb data
+Ind <- read_excel("Data.xlsx", sheet = "Data", na = ".")
+```
+
+#### Creating numerical copy
+
+```{r}
+Num.Ind <- Ind #Creating a copy of data set where all variables are numerical for correlation calculations
+```
+
+#### Specifying variables
+
+```{r}
+#Specifying variables
+Ind$Pen <- as.numeric(Ind$Pen)
+Ind$Treatment <- factor(Ind$Treatment, levels = c("SS", "SM", "MS", "MM"))
+Ind$Period1 <- factor(Ind$Period1, levels = c("S", "M"))
+Ind$Period2 <- factor(Ind$Period2, levels = c("S", "M"))
+Ind$HenID <- as.numeric(Ind$HenID)
+Ind$Observer <- factor(Ind$Observer, levels = c("PL", "RVH"))
+Ind$Length <- as.numeric(Ind$Length)
+Ind$Height <- as.numeric(Ind$Height)
+Ind$Area <- as.numeric(Ind$Area)
+Ind$Perimeter <- as.numeric(Ind$Perimeter)
+Ind$Complexity <- as.numeric(Ind$Complexity)
+Ind$Laterality <- factor(Ind$Laterality, levels = c("R", "L"))
+Ind$CombDamage <- factor(Ind$CombDamage, levels = c("1", "2", "3"))
+Ind$Weight <- as.numeric(Ind$Weight)
+Ind$FeatherScore <- as.numeric(Ind$FeatherScore)
+```
+
+### Descriptive
+
+#### Summary
+
+```{r}
+summary(Ind)
+```
+
+#### Correlations
+
+```{r}
+cor.test(Num.Ind$Area, Num.Ind$Perimeter)
+cor.test(Num.Ind$Area, Num.Ind$Complexity)
+cor.test(Num.Ind$Area, Num.Ind$CombDamage)
+cor.test(Num.Ind$Area, Num.Ind$Weight)
+cor.test(Num.Ind$Area, Num.Ind$FeatherScore)
+
+cor.test(Num.Ind$Perimeter, Num.Ind$Complexity)
+cor.test(Num.Ind$Perimeter, Num.Ind$CombDamage)
+cor.test(Num.Ind$Perimeter, Num.Ind$Weight)
+cor.test(Num.Ind$Perimeter, Num.Ind$FeatherScore)
+
+cor.test(Num.Ind$Complexity, Num.Ind$CombDamage)
+cor.test(Num.Ind$Complexity, Num.Ind$Weight)
+cor.test(Num.Ind$Complexity, Num.Ind$FeatherScore)
+
+cor.test(Num.Ind$CombDamage, Num.Ind$Weight)
+cor.test(Num.Ind$CombDamage, Num.Ind$FeatherScore)
+
+cor.test(Num.Ind$Weight, Num.Ind$FeatherScore)
+```
+
+##### Righty correlations
+
+Correlations but filtered for right-lopped hens ("Righties").
+
+```{r}
+Num.Ind.R <- Num.Ind %>% 
+  filter(Laterality == "R")
+```
+
+```{r}
+cor.test(Num.Ind.R$Area, Num.Ind.R$Perimeter)
+cor.test(Num.Ind.R$Area, Num.Ind.R$Complexity)
+cor.test(Num.Ind.R$Area, Num.Ind.R$CombDamage)
+cor.test(Num.Ind.R$Area, Num.Ind.R$Weight)
+cor.test(Num.Ind.R$Area, Num.Ind.R$FeatherScore)
+
+cor.test(Num.Ind.R$Perimeter, Num.Ind.R$Complexity)
+cor.test(Num.Ind.R$Perimeter, Num.Ind.R$CombDamage)
+cor.test(Num.Ind.R$Perimeter, Num.Ind.R$Weight)
+cor.test(Num.Ind.R$Perimeter, Num.Ind.R$FeatherScore)
+
+cor.test(Num.Ind.R$Complexity, Num.Ind.R$CombDamage)
+cor.test(Num.Ind.R$Complexity, Num.Ind.R$Weight)
+cor.test(Num.Ind.R$Complexity, Num.Ind.R$FeatherScore)
+
+cor.test(Num.Ind.R$CombDamage, Num.Ind.R$Weight)
+cor.test(Num.Ind.R$CombDamage, Num.Ind.R$FeatherScore)
+
+cor.test(Num.Ind.R$Weight, Num.Ind.R$FeatherScore)
+```
+
+##### Lefty correlations
+
+Correlations but filtered for left-lopped hens ("lefties").
+
+```{r}
+Num.Ind.L <- Num.Ind %>% 
+  filter(Laterality == "L")
+```
+
+```{r}
+cor.test(Num.Ind.L$Area, Num.Ind.L$Perimeter)
+cor.test(Num.Ind.L$Area, Num.Ind.L$Complexity)
+cor.test(Num.Ind.L$Area, Num.Ind.L$CombDamage)
+cor.test(Num.Ind.L$Area, Num.Ind.L$Weight)
+cor.test(Num.Ind.L$Area, Num.Ind.L$FeatherScore)
+
+cor.test(Num.Ind.L$Perimeter, Num.Ind.L$Complexity)
+cor.test(Num.Ind.L$Perimeter, Num.Ind.L$CombDamage)
+cor.test(Num.Ind.L$Perimeter, Num.Ind.L$Weight)
+cor.test(Num.Ind.L$Perimeter, Num.Ind.L$FeatherScore)
+
+cor.test(Num.Ind.L$Complexity, Num.Ind.L$CombDamage)
+cor.test(Num.Ind.L$Complexity, Num.Ind.L$Weight)
+cor.test(Num.Ind.L$Complexity, Num.Ind.L$FeatherScore)
+
+cor.test(Num.Ind.L$CombDamage, Num.Ind.L$Weight)
+cor.test(Num.Ind.L$CombDamage, Num.Ind.L$FeatherScore)
+
+cor.test(Num.Ind.L$Weight, Num.Ind.L$FeatherScore)
+```
+
+##### Create Heatmap
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(reshape2)   #Melt-function
+library(readxl)     #Read excel-files
+library(openxlsx)   #Create excel files
+library(tidyverse)  #Time without date, ggplot2, dplyr
+library(ggtext)     #Alternatives for text
+```
+
+```{r}
+#Import heatmap correlations: Righties corelations over diagonal, Lefties correlations below diagonal
+heat <- read_excel(path = "HeatmapData.xlsx", sheet = "LR")
+```
+
+```{r}
+#Prepare data for heatmap creation
+melt_heat <- melt(heat, id = "Variable")
+```
+
+```{r}
+melt_heat$Variable <- factor(melt_heat$Variable, levels = c("Comb area (mm2)", "Comb perimeter length (mm)", "Comb shape complexity", "Body weight (g)", "Feather damage score", "Comb damage score"))
+
+melt_heat$variable <- factor(melt_heat$variable, levels = c("Comb area (mm2)", "Comb perimeter length (mm)", "Comb shape complexity", "Body weight (g)", "Feather damage score", "Comb damage score"))
+
+melt_heat$value <- as.numeric(melt_heat$value)
+
+HeatMap <- melt_heat %>% 
+  ggplot(aes(x = variable, y = Variable, fill = value)) + 
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "#23588D", high = "#D3492D", mid = "white",
+                       midpoint = 0, limit = c(-1,1), space = "Lab",
+                       name="Pearson\nCorrelation") +
+  geom_text(aes(label = value), color = "black", size = 8) +
+  scale_x_discrete(
+    labels=c('Comb area (mm2)' = bquote(Comb~area~(mm^2)), 'Comb perimeter length (mm)' = "Comb perimeter length (mm)", 'Comb shape complexity' = "Comb shape complexity", 'Body weight (g)' = "Body weight (g)", 'Feather damage score' = "Feather damage score", 'Comb damage score' = "Comb damage score")
+    ) + 
+  scale_y_discrete(
+    labels=c('Comb area (mm2)' = bquote(Comb~area~(mm^2)), 'Comb perimeter length (mm)' = "Comb perimeter length (mm)", 'Comb shape complexity' = "Comb shape complexity", 'Body weight (g)' = "Body weight (g)", 'Feather damage score' = "Feather damage score", 'Comb damage score' = "Comb damage score")) + 
+  theme_minimal(base_size = 34) + 
+  geom_text(aes(label = "0.85", x=1, y=2, fontface=2), size=8) +
+  geom_text(aes(label = "0.47", x=1, y=4, fontface=2), size=8) +
+  geom_text(aes(label = "-0.5", x=1, y=5, fontface=2), size=8) +
+  geom_text(aes(label = "0.52", x=2, y=3, fontface=2), size=8) +
+  geom_text(aes(label = "-0.42", x=2, y=5, fontface=2), size=8) +
+  geom_text(aes(label = "-0.43", x=4, y=5, fontface=2), size=8) +
+  geom_text(aes(label = "0.64", x=2, y=1, fontface=2), size=8) +
+  geom_text(aes(label = "0.77", x=3, y=2, fontface=2), size=8) +
+  geom_text(aes(label = "0.26", x=4, y=2, fontface=2), size=8) +
+  theme(
+  axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  axis.text.x=element_text(angle=40, hjust=0.88),
+  legend.key.width=unit(1.5,"cm"),
+  legend.key.height = unit(2.0, "cm"),
+  panel.grid.major = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank())
+
+HeatMap
+```
+Export picture via Plots Pane: TIFF format, width 1500 pixels, height 1100 pixels
+
+
+### Treatment effects
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(car) #for Anova-function
+library(DHARMa) #Residual Diagnostics for Mixed Models (e.g. over- and under dispersion and zero-inflation) both tests and plots
+library(lme4) #Recommended for mixed models 
+library(lmerTest) #Provide p-values for lme4
+library(emmeans) #Get least squares means, pairwise comparisons and CI
+```
+
+```{r}
+#Comb area (area)
+m3 <- lmer(Area ~ Period1 * Period2 + (1|Pen), data = Ind)
+summary(m3)
+Anova(m3, type = "III")
+emmeans(m3, list(pairwise ~ Period1, pairwise ~ Period2, pairwise ~ Period1:Period2))
+
+#DHARMa diagnostics
+m3.ressim <-simulateResiduals(m3)
+plot(m3.ressim)
+
+#Confidence Intervals
+confint(m3, method = "boot")
+```
+
+```{r}
+#Comb perimeter
+m4 <- lmer(Perimeter ~ Period1 * Period2 + (1|Pen), data = Ind)
+summary(m4)
+Anova(m4, type = "III")
+emmeans(m4, list(pairwise ~ Period1, pairwise ~ Period2, pairwise ~ Period1:Period2))
+
+#DHARMa diagnostics
+m4.ressim <-simulateResiduals(m4)
+plot(m4.ressim)
+
+#Confidence Intervals
+confint(m4, method = "boot")
+```
+
+```{r}
+#Comb shape complexity
+m5 <- lmer(Complexity ~ Period1 * Period2 + (1|Pen), data = Ind)
+summary(m5)
+Anova(m5, type = "III")
+emmeans(m5, list(pairwise ~ Period1, pairwise ~ Period2, pairwise ~ Period1:Period2))
+
+#DHARMa diagnostics
+m5.ressim <-simulateResiduals(m5)
+plot(m5.ressim)
+
+#Confidence Intervals
+confint(m5, method = "boot")
+```
+
+```{r}
+#Comb laterality
+m6 <- glmer(Laterality ~ Period1 * Period2 + (1|Pen), family = binomial, data = Ind)
+summary(m6)
+Anova(m6, type = "III")
+emmeans(m6, list(pairwise ~ Period1, pairwise ~ Period2, pairwise ~ Period1:Period2))
+
+#DHARMa diagnostics
+m6.ressim <-simulateResiduals(m6)
+plot(m6.ressim)
+
+#Confidence Intervals
+confint(m5, method = "boot")
+```
+
+
+### Laterality effects
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(car) #for Anova-function
+library(DHARMa) #Residual Diagnostics for Mixed Models (e.g. over- and under dispersion and zero-inflation) both tests and plots
+library(lme4) #Recommended for mixed models 
+library(lmerTest) #Provide p-values for lme4
+library(emmeans) #Get least squares means, pairwise comparisons and CI
+```
+
+```{r}
+#Comb area
+r3 <- lmer(Area ~  Laterality + (1|Pen), data = Ind)
+summary(r3)
+Anova(r3, type = "II")
+emmeans(r3, pairwise ~ Laterality, type = "response")
+
+#Confidence Intervals
+confint(r3, method = "boot")
+```
+
+```{r}
+#Comb perimeter
+r4 <- lmer(Perimeter ~ Laterality + (1|Pen), data = Ind)
+summary(r4)
+Anova(r4, type = "II")
+emmeans(r4, pairwise ~ Laterality, type = "response")
+
+#Confidence Intervals
+confint(r4, method = "boot")
+```
+
+```{r}
+#Comb shape complexity
+r5 <- lmer(Complexity ~ Laterality + (1|Pen), data = Ind)
+summary(r5)
+Anova(r5, type = "II")
+emmeans(r5, pairwise ~ Laterality, type = "response")
+
+#Confidence Intervals
+confint(r5, method = "boot")
+```
+
+```{r}
+#Body weight (end of period 3)
+r6 <- lmer(Weight ~ Laterality + (1|Pen), data = Ind)
+summary(r6)
+Anova(r6, type = "II")
+emmeans(r6, pairwise ~ Laterality, type = "response")
+
+#Confidence Intervals
+confint(r6, method = "boot")
+```
+
+```{r}
+#feather score (end of period 3)
+r7 <- lmer(FeatherScore ~ Laterality + (1|Pen), data = Ind)
+summary(r7)
+Anova(r7, type = "II")
+emmeans(r7, pairwise ~ Laterality, type = "response")
+#Confidence Intervals
+confint(r7, method = "boot")
+```
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(ordinal) #clmm for ordinal mixed model
+library(RVAideMemoire) #required for anova of clmm
+library(Rmisc) #needed to calculate CI for Comb scores, NOTE: this requires plyr and will therefore severely affect dplyr functions!!!
+
+#Comb wound score in Period 3 (First and only scoring) 
+s8 <- clmm(CombDamage ~ Laterality + (1|Pen), data=Ind)
+summary(s8)
+RVAideMemoire::Anova.clmm(s8,type="II")
+emmeans(s8, list(pairwise ~ Laterality), type = "response", mode = "mean.class", adjust = "none") #Because scores already on a 1-3 scale, manual transformation after pairwise comparison is not needed!
+
+#Confidence Intervals
+confint(s8, method = "boot")
+```
+
+
+### Figures
+
+#### Perimeter figure
+
+```{r}
+#perimeter
+Per <- data.frame(Lop = c("Right", "Left"),
+                  Response = c(325, 302), 
+                  Low.CI = c(315, 285),
+                  High.CI <- c(336, 320),
+                  CLD = c("b", "a"))
+
+Per$Lop <- factor(Per$Lop, levels = c("Left", "Right"))
+Per$Response <- as.numeric(Per$Response)
+Per$Low.CI <- as.numeric(Per$Low.CI)
+Per$High.CI <- as.numeric(Per$High.CI)
+Per$CLD <- factor(Per$CLD, levels = c("a", "b"))
+```
+
+```{r}
+#perimeter
+Per.Fig <-  Per %>%
+  ggplot(aes(x=Lop, y=Response)) +
+  geom_bar(   
+    aes(fill = Lop),
+    stat="identity",
+    width= 0.8,
+    position = position_dodge(width = 0.92),
+    alpha=0.85,
+    color="black") + 
+  scale_fill_manual(values =c("#23588D", "#D3492D")) +
+  geom_errorbar(
+    aes(ymin=Low.CI, ymax=High.CI), 
+    width = 0.45, 
+    position = position_dodge(width = 0.92), 
+    colour="black", 
+    linewidth=0.8) +
+  theme_classic(base_size = 20) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, .1)),
+    limits = c(0,370), 
+    breaks = c(0,50,150, 250, 350)) +
+  geom_text(
+    aes(label = CLD, y = High.CI + 20), 
+    size = 6, 
+    position = position_dodge(width = 0.97)) +
+  theme(
+    axis.text.x=element_text(size = 20), 
+    legend.position = 'none') +
+  labs(x="Lop", y="Perimeter (mm)")
+
+Per.Fig
+```
+
+Export picture via Plots Pane: TIFF format, width 300 pixels, height 400 pixels
+
+
+#### Complexity figure
+
+```{r}
+#Shape Complexity
+Com <- data.frame(Lop = c("Left", "Right"),
+                  Response = c(2.62, 2.79), 
+                  Low.CI = c(2.46, 2.69),
+                  High.CI <- c(2.78, 2.89),
+                  CLD = c("a", "a"))
+
+Com$Lop <- factor(Com$Lop, levels = c("Left", "Right"))
+Com$Response <- as.numeric(Com$Response)
+Com$Low.CI <- as.numeric(Com$Low.CI)
+Com$High.CI <- as.numeric(Com$High.CI)
+Com$CLD <- factor(Com$CLD, levels = c("a"))
+```
+
+```{r}
+#Shape Complexity
+Com.Fig <-  Com %>%
+  ggplot(aes(x=Lop, y=Response)) +
+  geom_bar(   
+    aes(fill = Lop),
+    stat="identity",
+    width= 0.8,
+    position = position_dodge(width = 0.92),
+    alpha=0.85,
+    color="black") + 
+  scale_fill_manual(values =c("#23588D", "#D3492D")) +
+  geom_errorbar(
+    aes(ymin=Low.CI, ymax=High.CI), 
+    width = 0.45, 
+    position = position_dodge(width = 0.92), 
+    colour="black", 
+    linewidth=0.8) +
+  theme_classic(base_size = 20) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, .1)),
+    limits = c(0,3.1), 
+    breaks = c(0,0.5, 1.0, 1.5, 2.0,2.5,3.0)) +
+  geom_text(
+    aes(label = CLD, y = High.CI + 0.2), 
+    size = 6, 
+    position = position_dodge(width = 0.97)) +
+  theme(
+    axis.text.x=element_text(size = 20), 
+    legend.position = 'none') +
+  labs(x="Lop", y="Comb shape complexity")
+
+Com.Fig
+```
+
+Export picture via Plots Pane: TIFF format, width 300 pixels, height 400 pixels
