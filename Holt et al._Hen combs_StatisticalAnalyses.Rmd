@@ -232,7 +232,7 @@ cor.test(Num.Ind$CombDamage, Num.Ind$FeatherScore)
 cor.test(Num.Ind$Weight, Num.Ind$FeatherScore)
 ```
 
-##### Righty correlations
+##### Righty (Hens with right lopped combs) correlations
 
 Correlations but filtered for right-lopped hens ("Righties").
 
@@ -263,7 +263,7 @@ cor.test(Num.Ind.R$CombDamage, Num.Ind.R$FeatherScore)
 cor.test(Num.Ind.R$Weight, Num.Ind.R$FeatherScore)
 ```
 
-##### Lefty correlations
+##### Lefty (Hens with left lopped combs) correlations
 
 Correlations but filtered for left-lopped hens ("lefties").
 
@@ -294,7 +294,7 @@ cor.test(Num.Ind.L$CombDamage, Num.Ind.L$FeatherScore)
 cor.test(Num.Ind.L$Weight, Num.Ind.L$FeatherScore)
 ```
 
-##### Create Heatmap
+##### Create Heatmap (Figure 4)
 
 ```{r, echo=TRUE, message=FALSE, warning=FALSE, include=FALSE}
 library(reshape2)   #Melt-function
@@ -511,7 +511,7 @@ confint(s8, method = "boot")
 
 ### Figures
 
-#### Perimeter figure
+#### Perimeter figure (Figure 3a)
 
 ```{r}
 #perimeter
@@ -566,7 +566,7 @@ Per.Fig
 Export picture via Plots Pane: TIFF format, width 300 pixels, height 400 pixels
 
 
-#### Complexity figure
+#### Comb shape complexity figure (Figure 3b)
 
 ```{r}
 #Shape Complexity
