@@ -518,14 +518,12 @@ confint(s8, method = "boot")
 Per <- data.frame(Lop = c("Right", "Left"),
                   Response = c(325, 302), 
                   Low.CI = c(315, 285),
-                  High.CI <- c(336, 320),
-                  CLD = c("b", "a"))
+                  High.CI <- c(336, 320))
 
 Per$Lop <- factor(Per$Lop, levels = c("Left", "Right"))
 Per$Response <- as.numeric(Per$Response)
 Per$Low.CI <- as.numeric(Per$Low.CI)
-Per$High.CI <- as.numeric(Per$High.CI)
-Per$CLD <- factor(Per$CLD, levels = c("a", "b"))
+Per$High.CI <- as.numeric(Per$High.CI))
 ```
 
 ```{r}
@@ -552,11 +550,11 @@ Per.Fig <-  Per %>%
     limits = c(0,370), 
     breaks = c(0,50,150, 250, 350)) +
   geom_text(
-    aes(label = CLD, y = High.CI + 20), 
-    size = 6, 
-    position = position_dodge(width = 0.97)) +
+    aes(label = "*", x= 1.5, y = 356), 
+    size = 6) +
+  geom_segment(aes(x = 1, y = 350, xend = 2, yend = 350), size = 0.75) +
   theme(
-    axis.text.x=element_text(size = 20), 
+    axis.text.x=element_text(size = 18), 
     legend.position = 'none') +
   labs(x="Lop", y="Perimeter (mm)")
 
@@ -573,14 +571,12 @@ Export picture via Plots Pane: TIFF format, width 300 pixels, height 400 pixels
 Com <- data.frame(Lop = c("Left", "Right"),
                   Response = c(2.62, 2.79), 
                   Low.CI = c(2.46, 2.69),
-                  High.CI <- c(2.78, 2.89),
-                  CLD = c("a", "a"))
+                  High.CI <- c(2.78, 2.89))
 
 Com$Lop <- factor(Com$Lop, levels = c("Left", "Right"))
 Com$Response <- as.numeric(Com$Response)
 Com$Low.CI <- as.numeric(Com$Low.CI)
-Com$High.CI <- as.numeric(Com$High.CI)
-Com$CLD <- factor(Com$CLD, levels = c("a"))
+Com$High.CI <- as.numeric(Com$High.CI))
 ```
 
 ```{r}
@@ -606,10 +602,6 @@ Com.Fig <-  Com %>%
     expand = expansion(mult = c(0, .1)),
     limits = c(0,3.1), 
     breaks = c(0,0.5, 1.0, 1.5, 2.0,2.5,3.0)) +
-  geom_text(
-    aes(label = CLD, y = High.CI + 0.2), 
-    size = 6, 
-    position = position_dodge(width = 0.97)) +
   theme(
     axis.text.x=element_text(size = 20), 
     legend.position = 'none') +
